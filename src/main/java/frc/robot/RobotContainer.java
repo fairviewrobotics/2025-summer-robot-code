@@ -41,9 +41,8 @@ public class RobotContainer
   // The robot's subsystems and commands are defined here...
   private final SwerveSubsystem       drivebase  = new SwerveSubsystem(new File(Filesystem.getDeployDirectory(),
                                                                                 "swerve"));
-  private final ShooterSubsystem shooterSubsystem = new ShooterSubsystem();
-  private final IntakeSubsystem intakeSubsystem = new IntakeSubsystem();
-
+                                                                                private final ShooterSubsystem shooterSubsystem = new ShooterSubsystem();
+                                                                                private final IntakeSubsystem intakeSubsystem = new IntakeSubsystem();
   /**
    * Converts driver input into a field-relative ChassisSpeeds that is controlled by angular velocity.
    */
@@ -165,6 +164,7 @@ public class RobotContainer
     if (DriverStation.isTest())
     {
       drivebase.setDefaultCommand(driveFieldOrientedAnglularVelocity); // Overrides drive command above!
+
       driverXbox.a().whileTrue(new ExampleShooterCommand(shooterSubsystem, 1000));
       driverXbox.x().whileTrue(new ArmTestCommand(intakeSubsystem));
       driverXbox.y().whileTrue(new ClawTestCommand(intakeSubsystem));

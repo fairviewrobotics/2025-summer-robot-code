@@ -84,8 +84,7 @@ public class SwerveSubsystem extends SubsystemBase
   public SwerveSubsystem(File directory)
   {
     boolean blueAlliance = false;
-    Pose2d startingPose = blueAlliance ? 
-    new Pose2d(new Translation2d(Meter.of(1),
+    Pose2d startingPose = blueAlliance ? new Pose2d(new Translation2d(Meter.of(1),
                                                                       Meter.of(4)),
                                                     Rotation2d.fromDegrees(0))
                                        : new Pose2d(new Translation2d(Meter.of(16),
@@ -133,8 +132,8 @@ public class SwerveSubsystem extends SubsystemBase
                                   Constants.MAX_SPEED,
                                   new Pose2d(new Translation2d(Meter.of(2), Meter.of(0)),
                                              Rotation2d.fromDegrees(0)));
-    swerveDrive.setHeadingCorrection(false);
-    swerveDrive.setCosineCompensator(false);
+                                              swerveDrive.setHeadingCorrection(false);
+                                              swerveDrive.setCosineCompensator(false);
   }
 
   /**
