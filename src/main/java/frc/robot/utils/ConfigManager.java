@@ -6,8 +6,6 @@ import edu.wpi.first.wpilibj.Filesystem;
 import java.io.*;
 import java.nio.file.Path;
 import java.util.EnumSet;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
@@ -28,8 +26,6 @@ public class ConfigManager {
     private JSONObject json;
 
     private final NetworkTablesUtils NTTune = NetworkTablesUtils.getTable("Tune");
-
-    private static final Logger LOGGER = LogManager.getLogger();
 
     /**
      * Get the instance of the config manager
@@ -59,13 +55,11 @@ public class ConfigManager {
         this.configFile = configFile;
         try {
             if (configFile.createNewFile() || configFile.length() == 0) {
-                LOGGER.info("Created config file");
                 this.json = this.getDefault();
                 this.saveConfig();
             }
         } catch (IOException e) {
 
-            LOGGER.warn("Failed to create config file", e);
         }
 
         this.parseConfig();
@@ -77,7 +71,6 @@ public class ConfigManager {
     @SuppressWarnings("unchecked")
     public void initNtValues() {
         for (String key : (Iterable<String>) this.json.keySet()) {
-            LOGGER.info("Initializing [{}] network table entry to [{}]", key, this.json.get(key));
             this.NTTune.getNetworkTable().getEntry(key).setValue(this.json.get(key));
         }
     }
@@ -90,8 +83,6 @@ public class ConfigManager {
                 (table, key1, event) -> {
                     Object value = table.getValue(key1).getValue();
                     this.json.put(key1, value);
-                    LOGGER.info("Updated [{}] to `{}`", key1, value.toString());
-
                     this.saveConfig();
                 });
     }
@@ -172,10 +163,8 @@ public class ConfigManager {
             try {
                 res = Double.parseDouble(number.toString());
             } catch (Exception e) {
-                LOGGER.warn("Failed to get {} as a double", key, e);
             }
         } else {
-            LOGGER.warn("{} is a NULL value", key);
         }
 
         return res;
@@ -193,7 +182,7 @@ public class ConfigManager {
         try {
             res = (boolean) this.json.get(key);
         } catch (Exception e) {
-            LOGGER.warn("Failed to get {} as a boolean", key, e);
+
         }
 
         return res;
@@ -211,7 +200,6 @@ public class ConfigManager {
         try {
             res = (String) this.json.get(key);
         } catch (ClassCastException e) {
-            LOGGER.warn("Failed to get {} as a string", key, e);
         }
 
         return res;
@@ -235,7 +223,7 @@ public class ConfigManager {
             printWriter.println(this.json.toJSONString());
             printWriter.flush();
         } catch (FileNotFoundException e) {
-            LOGGER.warn("Failed to save file: {}", configFile, e);
+            
         }
     }
 
@@ -246,7 +234,7 @@ public class ConfigManager {
             Object obj = parser.parse(new FileReader(this.configFile));
             this.json = (JSONObject) obj;
         } catch (IOException | ParseException | ClassCastException e) {
-            LOGGER.error("An error occurred while parsing the config file", e);
+
         }
     }
 
@@ -259,7 +247,7 @@ public class ConfigManager {
     @SuppressWarnings("unchecked")
     private void checkDefault(String key, Object defaultValue) {
         if (!this.json.containsKey(key)) {
-            LOGGER.info("{} does not exist, creating a setting to {}", key, defaultValue);
+            
             NTTune.getNetworkTable().getEntry(key).setValue(defaultValue);
             this.json.put(key, defaultValue);
         }
