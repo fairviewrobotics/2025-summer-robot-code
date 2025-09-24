@@ -12,7 +12,8 @@ import frc.robot.utils.MathUtils;
 public class ShooterSubsystem extends SubsystemBase {
     private final ConfigManager config = ConfigManager.getInstance();
 
-    private final SparkFlex shooterMotor = new SparkFlex(ShooterConstants.shooterMotorID, SparkLowLevel.MotorType.kBrushless);
+    private final SparkFlex topShooterMotor = new SparkFlex(ShooterConstants.topShooterMotorID, SparkLowLevel.MotorType.kBrushless);
+    private final SparkFlex bottomShooterMotor = new SparkFlex(ShooterConstants.bottomShooterMotorID, SparkLowLevel.MotorType.kBrushless);
 
     private final SimpleMotorFeedforward shooterFF = new SimpleMotorFeedforward(
             config.get("ShooterFFKs", ShooterConstants.shooterFFKs),
@@ -21,9 +22,7 @@ public class ShooterSubsystem extends SubsystemBase {
     );
 
     private final PIDController shooterPID = new PIDController(
-            config.get("ShooterP", ShooterConstants.shooterP),
-            config.get("ShooterI", ShooterConstants.shooterI),
-            config.get("ShooterD", ShooterConstants.shooterD)
+            ShooterConstants.shooterP, ShooterConstants.shooterI, ShooterConstants.shooterD
     );
 
     public ShooterSubsystem() {
@@ -32,14 +31,25 @@ public class ShooterSubsystem extends SubsystemBase {
 
 
     public void setMotorRPM(double rpm) {
-        shooterMotor.setVoltage(
-                shooterPID.calculate(MathUtils.RPMtoRadians(shooterMotor.getEncoder().getVelocity()), MathUtils.RPMtoRadians(rpm)) +
+        topShooterMotor.setVoltage(
+                shooterPID.calculate(MathUtils.RPMtoRadians(topShooterMotor.getEncoder().getVelocity()), MathUtils.RPMtoRadians(rpm)) +
+                        shooterPID.calculate(MathUtils.RPMtoRadians(rpm))
+        );
+        bottomShooterMotor.setVoltage(
+                shooterPID.calculate(MathUtils.RPMtoRadians(bottomShooterMotor.getEncoder().getVelocity()), MathUtils.RPMtoRadians(rpm)) +
                         shooterPID.calculate(MathUtils.RPMtoRadians(rpm))
         );
     }
 
     public void runVolts(double volts) {
-        shooterMotor.setVoltage(volts);
+        topShooterMotor.setVoltage(volts);
+        bottomShooterMotor.setVoltage(volts);
+    }
+
+    public void periodic() {
+        shooterPID.setP(config.get("ShooterP", ShooterConstants.shooterP));
+        shooterPID.setI(config.get("ShooterI", ShooterConstants.shooterI));
+        shooterPID.setD(config.get("ShooterD", ShooterConstants.shooterD));
     }
 
     public void resetPID() {
