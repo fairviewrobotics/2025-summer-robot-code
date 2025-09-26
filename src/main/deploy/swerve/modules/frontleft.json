@@ -10,12 +10,12 @@
     "canbus": null
   },
   "angle": {
-    "type": "talonsrx",
+    "type": "krakenx60",
     "id": 2,
     "canbus": null
   },
   "encoder": {
-    "type": "talonsrx_pwm",
+    "type": "cancoder",
     "id": 20,
     "canbus": null
   },
