@@ -34,7 +34,6 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.button.RobotModeTriggers;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Config;
 import frc.robot.Constants;
-import frc.robot.constants.DrivetrainConstants;
 import frc.robot.subsystems.Vision.Cameras;
 import java.io.File;
 import java.io.IOException;
@@ -617,12 +616,12 @@ public class SwerveSubsystem extends SubsystemBase
       translationMag = maxVel;
     }
     else {
-      translationMag = -DrivetrainConstants.MAX_DRIVE_VELOCITY_MPS * drivePID.calculate(Math.sqrt(Math.pow(difference.getX(), 2) + Math.pow(difference.getY(), 2)));
+      translationMag = -Constants.MAX_SPEED * drivePID.calculate(Math.sqrt(Math.pow(difference.getX(), 2) + Math.pow(difference.getY(), 2)));
     }
 
     xVel = translationMag * Math.cos(difference.getAngle().getRadians());
     yVel = translationMag * Math.sin(difference.getAngle().getRadians());
-    rVel = DrivetrainConstants.MAX_ANGULAR_SPEED * turnPID.calculate(swerveDrive.getYaw().getRadians());
+    rVel = Constants.MAX_ANGULAR_SPEED * turnPID.calculate(swerveDrive.getYaw().getRadians());
     if (rVel > 0) {
       rVel = Math.min(rVel, maxRVel);
     }
