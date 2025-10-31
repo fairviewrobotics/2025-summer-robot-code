@@ -19,10 +19,7 @@ import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.Constants.OperatorConstants;
-import frc.robot.commands.ArmTestCommand;
-import frc.robot.commands.ClawTestCommand;
 import frc.robot.commands.ExampleShooterCommand;
-import frc.robot.subsystems.IntakeSubsystem;
 import frc.robot.subsystems.ShooterSubsystem;
 import frc.robot.subsystems.SwerveSubsystem;
 import java.io.File;
@@ -41,8 +38,7 @@ public class RobotContainer
   // The robot's subsystems and commands are defined here...
   private final SwerveSubsystem       drivebase  = new SwerveSubsystem(new File(Filesystem.getDeployDirectory(),
                                                                                 "swerve"));
-                                                                                private final ShooterSubsystem shooterSubsystem = new ShooterSubsystem();
-                                                                                private final IntakeSubsystem intakeSubsystem = new IntakeSubsystem();
+
   /**
    * Converts driver input into a field-relative ChassisSpeeds that is controlled by angular velocity.
    */
@@ -165,9 +161,6 @@ public class RobotContainer
     {
       drivebase.setDefaultCommand(driveFieldOrientedAnglularVelocity); // Overrides drive command above!
 
-      driverXbox.a().whileTrue(new ExampleShooterCommand(shooterSubsystem, 1000));
-      driverXbox.x().whileTrue(new ArmTestCommand(intakeSubsystem));
-      driverXbox.y().whileTrue(new ClawTestCommand(intakeSubsystem));
       driverXbox.start().onTrue((Commands.runOnce(drivebase::zeroGyro)));
       driverXbox.back().whileTrue(drivebase.centerModulesCommand());
       driverXbox.leftBumper().onTrue(Commands.none());
