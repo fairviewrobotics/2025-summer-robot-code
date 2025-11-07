@@ -4,8 +4,11 @@
 
 package frc.robot.subsystems;
 
+import static edu.wpi.first.math.MathUtil.angleModulus;
 import static edu.wpi.first.units.Units.Meter;
 
+import com.ctre.phoenix6.hardware.TalonFX;
+import com.ctre.phoenix6.swerve.SwerveRequest;
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.commands.PathPlannerAuto;
 import com.pathplanner.lib.commands.PathfindingCommand;
@@ -17,6 +20,8 @@ import com.pathplanner.lib.path.PathPlannerPath;
 import com.pathplanner.lib.util.DriveFeedforwards;
 import com.pathplanner.lib.util.swerve.SwerveSetpoint;
 import com.pathplanner.lib.util.swerve.SwerveSetpointGenerator;
+
+import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.math.geometry.Pose2d;
@@ -26,15 +31,20 @@ import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.trajectory.Trajectory;
 import edu.wpi.first.math.util.Units;
+import edu.wpi.first.networktables.NetworkTableEntry;
+import edu.wpi.first.networktables.NetworkTableInstance;
+import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.Preferences;
 import edu.wpi.first.wpilibj.Timer;
+import edu.wpi.first.wpilibj.smartdashboard.Field2d;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.button.RobotModeTriggers;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Config;
 import frc.robot.Constants;
-import frc.robot.constants.DrivetrainConstants;
 import frc.robot.subsystems.Vision.Cameras;
 import java.io.File;
 import java.io.IOException;
@@ -51,18 +61,19 @@ import swervelib.SwerveController;
 import swervelib.SwerveDrive;
 import swervelib.SwerveDriveTest;
 import swervelib.math.SwerveMath;
-import swervelib.parser.SwerveControllerConfiguration;
-import swervelib.parser.SwerveDriveConfiguration;
-import swervelib.parser.SwerveParser;
+import swervelib.motors.SwerveMotor;
+import swervelib.parser.*;
 import swervelib.telemetry.SwerveDriveTelemetry;
 import swervelib.telemetry.SwerveDriveTelemetry.TelemetryVerbosity;
 
 public class SwerveSubsystem extends SubsystemBase
 {
-  private final NetworkTablesUtils NTUtils = NetworkTablesUtils.getTable("debug");
+  private final NetworkTablesUtils NTDebug = NetworkTablesUtils.getTable("debug");
   //TODO: add swerve constants
-  private final PIDController drivePID = new PIDController(0, 0, 0);
-  private final PIDController turnPID = new PIDController(0, 0, 0);
+  private final PIDController decelerationPID = new PIDController(Constants.DrivebaseConstants.DECELERATION_P, 0, Constants.DrivebaseConstants.DECELERATION_P);
+  private final PIDController autoRotationPID = new PIDController(4.0, 0, 0.1);
+  
+
   /**
    * Swerve drive object.
    */
@@ -117,6 +128,9 @@ public class SwerveSubsystem extends SubsystemBase
     }
     setupPathPlanner();
     RobotModeTriggers.autonomous().onTrue(Commands.runOnce(this::zeroGyroWithAlliance));
+
+    // autoRotationPID.enableContinuousInput(-Math.PI, Math.PI);
+    autoRotationPID.setTolerance(0.05);
   }
 
   /**
@@ -127,6 +141,7 @@ public class SwerveSubsystem extends SubsystemBase
    */
   public SwerveSubsystem(SwerveDriveConfiguration driveCfg, SwerveControllerConfiguration controllerCfg)
   {
+    NTDebug.setEntry("RAN?", "No");
     swerveDrive = new SwerveDrive(driveCfg,
                                   controllerCfg,
                                   Constants.MAX_SPEED,
@@ -144,9 +159,51 @@ public class SwerveSubsystem extends SubsystemBase
     vision = new Vision(swerveDrive::getPose, swerveDrive.field);
   }
 
+  
+
+  private void updateTuningValues() {
+
+    if (!Preferences.containsKey("TARGET_POSE_X")) {
+      Preferences.initDouble("DECELERATION_P", Constants.DrivebaseConstants.DECELERATION_P);
+      Preferences.initDouble("DECELERATION_D", Constants.DrivebaseConstants.DECELERATION_D);
+      Preferences.initDouble("AUTO_ROTATION_P", Constants.DrivebaseConstants.AUTO_ROTATION_P);
+      Preferences.initDouble("AUTO_ROTATION_D", Constants.DrivebaseConstants.AUTO_ROTATION_D); 
+      Preferences.initDouble("TARGET_POSE_X", 0.0);
+      Preferences.initDouble("TARGET_POSE_Y", 0.0);
+      Preferences.initDouble("TARGET_ROTATION", 0.0);
+    }
+
+    decelerationPID.setP(Preferences.getDouble("DECELERATION_P", Constants.DrivebaseConstants.DECELERATION_P));
+    decelerationPID.setD(Preferences.getDouble("DECELERATION_D", Constants.DrivebaseConstants.DECELERATION_D));
+    autoRotationPID.setP(Preferences.getDouble("AUTO_ROTATION_P", Constants.DrivebaseConstants.AUTO_ROTATION_P));
+    autoRotationPID.setD(Preferences.getDouble("AUTO_ROTATION_D", Constants.DrivebaseConstants.AUTO_ROTATION_D));
+
+  }
+
   @Override
   public void periodic()
   {
+
+        // Update odometry before logging
+        swerveDrive.updateOdometry();
+
+        // Get current pose
+        Pose2d currentPose = swerveDrive.getPose();
+    
+        // Update Field2d for the sim window
+        field.setRobotPose(currentPose);
+    
+        // Publish to AdvantageScope (X, Y, Rotation in RADIANS)
+        poseEntry.setDoubleArray(new double[] {
+            currentPose.getX(),
+            currentPose.getY(),
+            currentPose.getRotation().getRadians()
+        });
+    
+        SmartDashboard.putData("Field", field);
+
+    // updateTuningValues();
+
     // When vision is enabled we must manually update odometry in SwerveDrive
     if (visionDriveTest)
     {
@@ -158,7 +215,11 @@ public class SwerveSubsystem extends SubsystemBase
   @Override
   public void simulationPeriodic()
   {
+    updateTuningValues();
+    swerveDrive.updateOdometry();
+
   }
+  
 
   /**
    * Setup AutoBuilder for PathPlanner.
@@ -601,40 +662,67 @@ public class SwerveSubsystem extends SubsystemBase
       zeroGyro();
     }
   }
+private final Field2d field = new Field2d();
+private final NetworkTableEntry poseEntry =
+    NetworkTableInstance.getDefault()
+        .getTable("Sim")
+        .getEntry("RobotPose");
 
-  public boolean driveToPoint(Pose2d point, double tolerance, double maxVel, double maxRVel, double robotYComp, boolean isContinuous) {
-    double xVel, yVel, rVel;
+public boolean driveToPointVectorBased(Pose2d point, double tolerance, double maxVel, double maxRVel, boolean isContinuous) {
+
+    NTDebug.setEntry("TRANSLATION_X?", point.getX());
+
+    // Use radians consistently
+    double yaw = swerveDrive.getYaw().getRadians();
+    double targetYaw = point.getRotation().getRadians();    
+
+    // Ensure PID is using radians
+     // or some small radian tolerance
+    autoRotationPID.setSetpoint(targetYaw);
+    decelerationPID.setTolerance(tolerance);
+
+    // Translation
+    Translation2d difference = point.minus(swerveDrive.getPose()).getTranslation();
+    double distance = difference.getNorm();
+
     double translationMag;
 
-    drivePID.setSetpoint(0.0);
-    turnPID.setSetpoint(point.getRotation().getRadians());
-    drivePID.setTolerance(tolerance);
-    turnPID.setTolerance(tolerance);
-
-    Translation2d difference = point.minus(swerveDrive.getPose()).getTranslation();
-
     if (isContinuous) {
-      translationMag = maxVel;
-    }
-    else {
-      translationMag = -DrivetrainConstants.MAX_DRIVE_VELOCITY_MPS * drivePID.calculate(Math.sqrt(Math.pow(difference.getX(), 2) + Math.pow(difference.getY(), 2)));
-    }
+        translationMag = -maxVel;
+        
+    } else {
+        translationMag = Math.min(maxVel, decelerationPID.calculate(Math.abs(distance), 0.0));
+    }   
 
-    xVel = translationMag * Math.cos(difference.getAngle().getRadians());
-    yVel = translationMag * Math.sin(difference.getAngle().getRadians());
-    rVel = DrivetrainConstants.MAX_ANGULAR_SPEED * turnPID.calculate(swerveDrive.getYaw().getRadians());
+    double xVel = translationMag * Math.cos(difference.getAngle().getRadians());
+    double yVel = translationMag * Math.sin(difference.getAngle().getRadians());
+
+    NTDebug.setEntry("velocity", translationMag);
+    NTDebug.setEntry("drive pid calculation",decelerationPID.calculate(Math.abs(distance), 0.0));
+
+  
+
+    // Rotation PID: calculate using radians
+    double rVel = maxRVel * autoRotationPID.calculate(yaw, targetYaw);
+    // rVel = MathUtil.clamp(rVel, -maxRVel, maxRVel);
     if (rVel > 0) {
       rVel = Math.min(rVel, maxRVel);
-    }
-    else {
+    } else {
       rVel = Math.max(rVel, -maxRVel);
     }
+
     Translation2d driveVals = new Translation2d(xVel, yVel);
 
     drive(driveVals, rVel, true);
 
-    return drivePID.atSetpoint() && turnPID.atSetpoint();
-  }
+    NTDebug.setEntry("distance", distance);
+
+    // Return true if within positional tolerance
+
+    return  distance<tolerance && autoRotationPID.getError() < tolerance;
+    // return distance < tolerance;
+}
+
 
   /**
    * Sets the drive motors to brake/coast mode.
