@@ -25,11 +25,11 @@ public class ArmSubsystem extends SubsystemBase {
         armPID.setTolerance(ArmConstants.armTolerance);
         armPID.enableContinuousInput(-Math.PI, Math.PI);
         SparkFlexConfig armConfig = new SparkFlexConfig();
-        armConfig.inverted(true);
+        armConfig.inverted(false);
         armConfig.idleMode(SparkBaseConfig.IdleMode.kBrake);
         armConfig
                 .absoluteEncoder
-                .inverted(true)
+                .inverted(false)
                 .positionConversionFactor(2 * Math.PI) // radians
                 .velocityConversionFactor(2 * Math.PI / 60.0);
         armMotor.configure(
