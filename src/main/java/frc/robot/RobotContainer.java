@@ -51,7 +51,7 @@ public class RobotContainer
   SwerveInputStream driveAngularVelocity = SwerveInputStream.of(drivebase.getSwerveDrive(),
                   () -> driverXbox.getLeftY() * -1,
                   () -> driverXbox.getLeftX() * -1)
-          .withControllerRotationAxis(driverXbox::getRightX)
+          .withControllerRotationAxis(() -> driverXbox.getRightX() * -1)
           .deadband(OperatorConstants.DEADBAND)
           .scaleTranslation(0.8)
           .allianceRelativeControl(true);
@@ -197,7 +197,8 @@ public class RobotContainer
   Preferences.getDouble("TARGET_POSE_Y", 0.0),
   Rotation2d.fromDegrees(Preferences.getDouble("TARGET_ROTATION", 0.0))
 );
-
+  private final double tolerance = Preferences.getDouble("TOLERANCE",0.1);
+  private final double MAX_SPEED = Preferences.getDouble("MAX_SPEED", 1.0);
   // Pose2d origin = new Pose2d(Preferences.getDouble("TARGET_POSE_X", 0.0), Preferences.getDouble("TARGET_POSE_Y", 0.0), new Rotation2d(Preferences.getDouble("TARGET_ROTATION", 0.0)));
   Translation2d zero = new Translation2d(0 , 0);
 
