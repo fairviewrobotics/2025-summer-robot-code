@@ -4,6 +4,7 @@ import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.subsystems.ShooterSubsystem;
 
 //Example usage of Shooter Subsystem, not in Robot Container
+
 public class ExampleShooterCommand extends Command {
     private final ShooterSubsystem shooterSubsystem;
     private double shooterRPM;

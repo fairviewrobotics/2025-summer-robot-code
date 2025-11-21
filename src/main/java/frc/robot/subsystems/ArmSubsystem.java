@@ -41,6 +41,7 @@ public class ArmSubsystem extends SubsystemBase {
         Preferences.initDouble("ARM_TOLERANCE", ArmConstants.armTolerance);
         Preferences.initDouble("ARM_MAX_VELOCITY", ArmConstants.armMaxVelocity);
         Preferences.initDouble("ARM_MAX_ACCELERATION", ArmConstants.armMaxAcceleration);
+        Preferences.initDouble("ARM_SETPOINT", 0.0);
     }
 
     public void setVoltage(double volts) {
@@ -60,7 +61,7 @@ public class ArmSubsystem extends SubsystemBase {
 
         double pidValue = armPID.calculate(getArmAngle(), angle);
 
-        setSpeed(pidValue);
+        setVoltage(pidValue);
     }
 
     public double getArmAngle() {

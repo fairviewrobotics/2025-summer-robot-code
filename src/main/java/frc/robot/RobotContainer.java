@@ -24,8 +24,11 @@ import edu.wpi.first.wpilibj2.command.WaitCommand;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.Constants.OperatorConstants;
-import frc.robot.subsystems.SwerveLocalizer;
-import frc.robot.subsystems.SwerveSubsystem;
+import frc.robot.commands.ArmCommand;
+import frc.robot.commands.ExampleShooterCommand;
+import frc.robot.commands.IntakeCommand;
+import frc.robot.subsystems.*;
+
 import java.io.File;
 import java.util.function.Supplier;
 
@@ -40,10 +43,14 @@ public class RobotContainer
 {
 
   // Replace with CommandPS4Controller or CommandJoystick if needed
-  final         CommandXboxController driverXbox = new CommandXboxController(0);
+  final CommandXboxController driverXbox = new CommandXboxController(0);
+  final CommandXboxController secondary_controller = new CommandXboxController(1);
   // The robot's subsystems and commands are defined here...
   private final SwerveSubsystem       drivebase  = new SwerveSubsystem(new File(Filesystem.getDeployDirectory(),
           "swerve"));
+  private final ArmSubsystem armSubsystem = new ArmSubsystem();
+  private final ShooterSubsystem shooterSubsystem = new ShooterSubsystem();
+  private final IntakeSubsystem intakeSubsystem = new IntakeSubsystem();
 
   /**
    * Converts driver input into a field-relative ChassisSpeeds that is controlled by angular velocity.
@@ -156,6 +163,9 @@ public class RobotContainer
       driverXbox.button(1).whileTrue(drivebase.sysIdDriveMotorCommand());
       driverXbox.button(2).whileTrue(Commands.runEnd(() -> driveDirectAngleKeyboard.driveToPoseEnabled(true),
               () -> driveDirectAngleKeyboard.driveToPoseEnabled(false)));
+      secondary_controller.leftBumper().whileTrue(new ArmCommand(armSubsystem, Preferences.getDouble("ARM_SETPOINT", 0.0)));
+      secondary_controller.rightBumper().whileTrue(new ExampleShooterCommand(shooterSubsystem, Preferences.getDouble("SHOOTER_RPM", 1000)));
+      secondary_controller.a().whileTrue(new IntakeCommand(intakeSubsystem, 4.0));
 
 //      driverXbox.b().whileTrue(
 //          drivebase.driveToPose(
