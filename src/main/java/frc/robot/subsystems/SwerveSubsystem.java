@@ -23,13 +23,16 @@ import com.pathplanner.lib.util.swerve.SwerveSetpointGenerator;
 
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.controller.PIDController;
+import edu.wpi.first.math.controller.ProfiledPIDController;
 import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Transform2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.trajectory.Trajectory;
+import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.networktables.NetworkTableEntry;
 import edu.wpi.first.networktables.NetworkTableInstance;
@@ -70,8 +73,8 @@ public class SwerveSubsystem extends SubsystemBase
 {
   private final NetworkTablesUtils NTDebug = NetworkTablesUtils.getTable("debug");
   //TODO: add swerve constants
-  private final PIDController decelerationPID = new PIDController(Constants.DrivebaseConstants.DECELERATION_P, 0, Constants.DrivebaseConstants.DECELERATION_P);
-  private final PIDController autoRotationPID = new PIDController(4.0, 0, 0.1);
+  private final ProfiledPIDController decelerationPID = new ProfiledPIDController(Constants.DrivebaseConstants.DECELERATION_P, 0, Constants.DrivebaseConstants.DECELERATION_P, Constants.DrivebaseConstants.TRANSLATION_ALIGN_CONSTRAINTS);
+  private final ProfiledPIDController autoRotationPID = new ProfiledPIDController(Constants.DrivebaseConstants.AUTO_ROTATION_P, 0, Constants.DrivebaseConstants.AUTO_ROTATION_D, Constants.DrivebaseConstants.ROTATION_ALIGN_CONSTRAINTS);
   
 
   /**
@@ -136,7 +139,7 @@ public class SwerveSubsystem extends SubsystemBase
       swerveDrive.stopOdometryThread();
     }
     setupPathPlanner();
-    RobotModeTriggers.autonomous().onTrue(Commands.runOnce(this::zeroGyroWithAlliance));
+    // RobotModeTriggers.autonomous().onTrue(Commands.runOnce(this::zeroGyroWithAlliance));
 
     // autoRotationPID.enableContinuousInput(-Math.PI, Math.PI);
     autoRotationPID.setTolerance(0.05);
@@ -149,9 +152,7 @@ public class SwerveSubsystem extends SubsystemBase
    * @param controllerCfg Swerve Controller.
    */
   public SwerveSubsystem(SwerveDriveConfiguration driveCfg, SwerveControllerConfiguration controllerCfg)
-  {
-    NTDebug.setEntry("RAN?", "No");
-    swerveDrive = new SwerveDrive(driveCfg,
+  {swerveDrive = new SwerveDrive(driveCfg,
                                   controllerCfg,
                                   Constants.MAX_SPEED,
                                   new Pose2d(new Translation2d(Meter.of(2), Meter.of(0)),
@@ -201,7 +202,7 @@ public class SwerveSubsystem extends SubsystemBase
         targetEntry.setDoubleArray(new double[] {
                 Preferences.getDouble("TARGET_POSE_X", 0.0),
                 Preferences.getDouble("TARGET_POSE_Y", 0.0),
-                Preferences.getDouble("TARGET_POSE_ROTATION", 0.0),
+                Preferences.getDouble("TARGET_ROTATION", 0.0),
         });
     
         SmartDashboard.putData("Field", field);
@@ -686,7 +687,7 @@ public boolean driveToPointVectorBased(Pose2d point, double tolerance, double ma
 
     // Ensure PID is using radians
      // or some small radian tolerance
-    autoRotationPID.setSetpoint(targetYaw);
+
     decelerationPID.setTolerance(tolerance);
 
     // Translation
@@ -706,7 +707,7 @@ public boolean driveToPointVectorBased(Pose2d point, double tolerance, double ma
     double yVel = translationMag * Math.sin(difference.getAngle().getRadians());
 
     NTDebug.setEntry("velocity", translationMag);
-    NTDebug.setEntry("drive pid calculation",decelerationPID.calculate(Math.abs(distance), 0.0));
+    NTDebug.setEntry("drive pid calculation", decelerationPID.calculate(Math.abs(distance), 0.0));
 
   
 
@@ -720,6 +721,17 @@ public boolean driveToPointVectorBased(Pose2d point, double tolerance, double ma
     }
 
     Translation2d driveVals = new Translation2d(xVel, yVel);
+    Translation2d driveVelocity =
+          new Pose2d(
+                  0.0,
+                  0.0,
+                  swerveDrive.getPose()
+                          .getTranslation()
+                          .minus(point.getTranslation())
+                          .getAngle())
+                  .transformBy(new Transform2d(translationMag, 0.0, new Rotation2d()))
+                  .getTranslation();
+
 
     drive(driveVals, rVel, true);
 
@@ -727,7 +739,7 @@ public boolean driveToPointVectorBased(Pose2d point, double tolerance, double ma
 
     // Return true if within positional tolerance
 
-    return  distance<tolerance && autoRotationPID.getError() < tolerance;
+    return  distance<tolerance && autoRotationPID.atSetpoint();
     // return distance < tolerance;
 }
 

@@ -13,7 +13,8 @@ public class IntakeSubsystem extends SubsystemBase {
     private final DigitalInput intakeLinebreak = new DigitalInput(0);
 
     public IntakeSubsystem() {
-        intakeRollerMotor.setInverted(false);
+        intakeRollerMotor.setInverted(true);
+        indexerMotor.setInverted(false);
     }
 
     public void setSpeed(double speed) {

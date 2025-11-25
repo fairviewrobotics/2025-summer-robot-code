@@ -10,13 +10,12 @@ public class ArmCommand extends Command {
     public ArmCommand(ArmSubsystem armSubsystem, double position) {
         this.armSubsystem = armSubsystem;
         this.position = position;
-        this.armSubsystem.resetPID();
         addRequirements(armSubsystem);
     }
 
     @Override
     public void initialize() {
-        armSubsystem.resetPID();
+       // armSubsystem.resetPID();
     }
 
     @Override
@@ -28,4 +27,10 @@ public class ArmCommand extends Command {
     public void end(boolean interrupted) {
         this.armSubsystem.setVoltage(0);
     }
+
+    @Override
+    public boolean isFinished() {
+        return armSubsystem.atTargetAngle();
+    }
+
 }

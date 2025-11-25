@@ -15,21 +15,18 @@ import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Filesystem;
 import edu.wpi.first.wpilibj.Preferences;
 import edu.wpi.first.wpilibj.RobotBase;
-import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.Commands;
-import edu.wpi.first.wpilibj2.command.InstantCommand;
-import edu.wpi.first.wpilibj2.command.RunCommand;
-import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
-import edu.wpi.first.wpilibj2.command.WaitCommand;
+import edu.wpi.first.wpilibj2.command.*;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.Constants.OperatorConstants;
 import frc.robot.commands.ArmCommand;
+import frc.robot.commands.DriveToPointCheesyPoofs;
 import frc.robot.commands.ExampleShooterCommand;
 import frc.robot.commands.IntakeCommand;
 import frc.robot.subsystems.*;
 
 import java.io.File;
+import java.util.function.DoubleSupplier;
 import java.util.function.Supplier;
 
 import swervelib.SwerveInputStream;
@@ -48,9 +45,9 @@ public class RobotContainer
   // The robot's subsystems and commands are defined here...
   private final SwerveSubsystem       drivebase  = new SwerveSubsystem(new File(Filesystem.getDeployDirectory(),
           "swerve"));
-  private final ArmSubsystem armSubsystem = new ArmSubsystem();
-  private final ShooterSubsystem shooterSubsystem = new ShooterSubsystem();
-  private final IntakeSubsystem intakeSubsystem = new IntakeSubsystem();
+  ArmSubsystem armSubsystem = new ArmSubsystem();
+  ShooterSubsystem shooterSubsystem = new ShooterSubsystem();
+  IntakeSubsystem intakeSubsystem = new IntakeSubsystem();
 
   /**
    * Converts driver input into a field-relative ChassisSpeeds that is controlled by angular velocity.
@@ -134,7 +131,18 @@ public class RobotContainer
     Command driveFieldOrientedAnglularVelocityKeyboard = drivebase.driveFieldOriented(driveAngularVelocityKeyboard);
     Command driveSetpointGenKeyboard = drivebase.driveWithSetpointGeneratorFieldRelative(
             driveDirectAngleKeyboard);
-
+    driverXbox.start().onTrue(Commands.runOnce(() -> drivebase.resetOdometry(new Pose2d(3, 3, new Rotation2d()))));
+    driverXbox.button(1).whileTrue(drivebase.sysIdDriveMotorCommand());
+    driverXbox.button(2).whileTrue(Commands.runEnd(() -> driveDirectAngleKeyboard.driveToPoseEnabled(true),
+            () -> driveDirectAngleKeyboard.driveToPoseEnabled(false)));
+    Supplier<Double> armSetpointSupplier = () -> Preferences.getDouble("ARM_SETPOINT", 0.0);
+    DoubleSupplier shooterSetpointSupplier = () -> Preferences.getDouble("SHOOTER_RPM", 0.0);
+    secondary_controller.leftBumper().whileTrue(new ParallelCommandGroup(new ArmCommand(armSubsystem, -0.4), new IntakeCommand(intakeSubsystem, shooterSubsystem, 4.0)));
+    secondary_controller.b().whileTrue(new ArmCommand(armSubsystem, -1.3));
+    secondary_controller.x().whileTrue(new IntakeCommand(intakeSubsystem, shooterSubsystem, -4));
+    secondary_controller.rightBumper().whileTrue(new ExampleShooterCommand(shooterSubsystem, shooterSetpointSupplier));
+    secondary_controller.a().whileTrue(new IntakeCommand(intakeSubsystem, shooterSubsystem, 4.0));
+    armSubsystem.setDefaultCommand(new ArmCommand(armSubsystem, -1.4));
     if (RobotBase.isSimulation())
     {
       drivebase.setDefaultCommand(driveFieldOrientedDirectAngleKeyboard);
@@ -159,13 +167,7 @@ public class RobotContainer
                       new Constraints(Units.degreesToRadians(360),
                               Units.degreesToRadians(180))
               ));
-      driverXbox.start().onTrue(Commands.runOnce(() -> drivebase.resetOdometry(new Pose2d(3, 3, new Rotation2d()))));
-      driverXbox.button(1).whileTrue(drivebase.sysIdDriveMotorCommand());
-      driverXbox.button(2).whileTrue(Commands.runEnd(() -> driveDirectAngleKeyboard.driveToPoseEnabled(true),
-              () -> driveDirectAngleKeyboard.driveToPoseEnabled(false)));
-      secondary_controller.leftBumper().whileTrue(new ArmCommand(armSubsystem, Preferences.getDouble("ARM_SETPOINT", 0.0)));
-      secondary_controller.rightBumper().whileTrue(new ExampleShooterCommand(shooterSubsystem, Preferences.getDouble("SHOOTER_RPM", 1000)));
-      secondary_controller.a().whileTrue(new IntakeCommand(intakeSubsystem, 4.0));
+
 
 //      driverXbox.b().whileTrue(
 //          drivebase.driveToPose(
@@ -202,10 +204,12 @@ public class RobotContainer
    * @return the command to run in autonomous
    */
 
+  private final Supplier<Rotation2d> rotationSupplier = () -> Rotation2d.fromDegrees(Preferences.getDouble("TARGET_ROTATION", 0.0));
+
   private final Supplier<Pose2d> targetPoseSupplier = () -> new Pose2d(
   Preferences.getDouble("TARGET_POSE_X", 0.0),
   Preferences.getDouble("TARGET_POSE_Y", 0.0),
-  Rotation2d.fromDegrees(Preferences.getDouble("TARGET_ROTATION", 0.0))
+  rotationSupplier.get()
 );
   private final double tolerance = Preferences.getDouble("TOLERANCE",0.1);
   private final double MAX_SPEED = Preferences.getDouble("MAX_SPEED", 1.0);
@@ -216,17 +220,32 @@ public class RobotContainer
   {
         // return new RunCommand(() -> drivebase.drive(origin2, 0.0, true));
         //return new RunCommand(() -> drivebase.driveToPointVectorBased(origin, 1.5, 1.0, 0.1, true));
-        Command driveToTarget =
-        new RunCommand(
-            () -> drivebase.driveToPointVectorBased(targetPoseSupplier.get(), 0.05, 4.0, 180, false),
-            drivebase
-        ).until(() -> drivebase.driveToPointVectorBased(targetPoseSupplier.get(), 0.05, 4.0, 180, false));
+//        Command driveToTarget =
+//        new RunCommand(
+//            () -> drivebase.driveToPointVectorBased(targetPoseSupplier.get(), 0.05, 4.0, 180, false),
+//            drivebase
+//        ).until(() -> drivebase.driveToPointVectorBased(targetPoseSupplier.get(), 0.05, 4.0, 180, false));
+//
+//    return new SequentialCommandGroup(
+//        driveToTarget,
+//        new InstantCommand(() -> drivebase.drive(zero, 0.0, true)),
+//        new WaitCommand(5.0)
+//    );
 
-    return new SequentialCommandGroup(
-        driveToTarget,
-        new InstantCommand(() -> drivebase.drive(zero, 0.0, true)),
-        new WaitCommand(5.0)
+    Pose2d shootPoint = new Pose2d(3, 3, new Rotation2d(0));
+    Command driveToAlgae1 = new DriveToPointCheesyPoofs(drivebase, drivebase.getPose(), targetPoseSupplier.get(), 0.7);
+    Command driveToShoot = new DriveToPointCheesyPoofs(drivebase, drivebase.getPose(), shootPoint, 0.7);
+
+    Command intake = new ParallelCommandGroup(new IntakeCommand(intakeSubsystem, shooterSubsystem, 4.0), new ArmCommand(armSubsystem, -0.4));
+    Command AlgaeIntake = new SequentialCommandGroup(
+            new ParallelCommandGroup(
+                    intake,
+                    driveToAlgae1
+            ).until(() -> shooterSubsystem.getLinebreak()).andThen(driveToShoot)
+
     );
+
+    return AlgaeIntake;
 
     // An example command will be run in autonomous
 //    return drivebase.getAutonomousCommand("New Auto");

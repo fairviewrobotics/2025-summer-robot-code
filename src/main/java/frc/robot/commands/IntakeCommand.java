@@ -2,13 +2,16 @@ package frc.robot.commands;
 
 import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.subsystems.IntakeSubsystem;
+import frc.robot.subsystems.ShooterSubsystem;
 
 public class IntakeCommand extends Command {
     private final IntakeSubsystem intakeSubsystem;
+    private final ShooterSubsystem shooterSubsystem;
     private final double intakeVoltage;
 
-    public IntakeCommand(IntakeSubsystem intakeSubsystem, double intakeVoltage) {
+    public IntakeCommand(IntakeSubsystem intakeSubsystem, ShooterSubsystem shooterSubsystem, double intakeVoltage) {
         this.intakeSubsystem = intakeSubsystem;
+        this.shooterSubsystem = shooterSubsystem;
         this.intakeVoltage = intakeVoltage;
         addRequirements(intakeSubsystem);
     }
@@ -32,6 +35,6 @@ public class IntakeCommand extends Command {
 
     @Override
     public boolean isFinished() {
-        return intakeSubsystem.getLinebreak(); // change to shooter linebreak
+        return shooterSubsystem.getLinebreak(); // change to shooter linebreak
     }
 }

@@ -5,6 +5,7 @@
 package frc.robot;
 
 import edu.wpi.first.math.geometry.Translation3d;
+import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.math.util.Units;
 import swervelib.math.Matter;
 
@@ -40,9 +41,10 @@ public final class Constants
     public static final double WHEEL_LOCK_TIME = 10; // seconds
     public static double DECELERATION_P = 2.0;
     public static double DECELERATION_D = 0.1;
-    public static double AUTO_ROTATION_P = 0.003;
+    public static double AUTO_ROTATION_P = 0.003; //4?
     public static double AUTO_ROTATION_D = 0.01;
-
+    public static final TrapezoidProfile.Constraints TRANSLATION_ALIGN_CONSTRAINTS = new TrapezoidProfile.Constraints(MAX_SPEED, 2.0);
+    public static final TrapezoidProfile.Constraints ROTATION_ALIGN_CONSTRAINTS = new TrapezoidProfile.Constraints(MAX_ANGULAR_SPEED, 0.25);
   }
 
   public static class OperatorConstants
