@@ -31,7 +31,7 @@ public class ArmSubsystem extends SubsystemBase {
         armConfig.idleMode(SparkBaseConfig.IdleMode.kBrake);
         armConfig
                 .absoluteEncoder
-                .inverted(false)
+                .inverted(true)
                 .positionConversionFactor(2 * Math.PI) // radians
                 .velocityConversionFactor(2 * Math.PI / 60.0);
         armMotor.configure(

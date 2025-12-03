@@ -9,17 +9,20 @@ import java.util.function.DoubleSupplier;
 
 public class ExampleShooterCommand extends Command {
     private final ShooterSubsystem shooterSubsystem;
-    private DoubleSupplier shooterRPM;
+    private DoubleSupplier topShooterRPM;
+    private DoubleSupplier bottomShooterRPM;
 
-    public ExampleShooterCommand(ShooterSubsystem shooterSubsystem, DoubleSupplier shooterRPM) {
+    public ExampleShooterCommand(ShooterSubsystem shooterSubsystem, DoubleSupplier topShooterRPM, DoubleSupplier bottomShooterRPM) {
         this.shooterSubsystem = shooterSubsystem;
-        this.shooterRPM = shooterRPM;
+        this.topShooterRPM = topShooterRPM;
+        this.bottomShooterRPM = bottomShooterRPM;
         addRequirements(shooterSubsystem);
     }
 
     @Override
     public void execute() {
-        shooterSubsystem.setMotorRPM(shooterRPM.getAsDouble());
+        shooterSubsystem.setTopShooterMotor(topShooterRPM.getAsDouble());
+        shooterSubsystem.setBottomShooterMotor(bottomShooterRPM.getAsDouble());
     }
 
     @Override

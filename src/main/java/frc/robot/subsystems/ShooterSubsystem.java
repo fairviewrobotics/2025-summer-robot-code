@@ -20,7 +20,7 @@ public class ShooterSubsystem extends SubsystemBase {
 
     private final SparkFlex topShooterMotor = new SparkFlex(ShooterConstants.TOP_SHOOTER_MOTOR_ID, SparkLowLevel.MotorType.kBrushless);
     private final SparkFlex bottomShooterMotor = new SparkFlex(ShooterConstants.BOTTOM_SHOOTER_MOTOR_ID, SparkLowLevel.MotorType.kBrushless);
-    private final DigitalInput shooterLinebreak = new DigitalInput(10);
+    private final DigitalInput shooterLinebreak = new DigitalInput(1);
     NetworkTablesUtils shooterNT = NetworkTablesUtils.getTable("Shooter");
 
     public ShooterSubsystem() {
@@ -31,6 +31,7 @@ public class ShooterSubsystem extends SubsystemBase {
         Preferences.initDouble("SHOOTER_KV", ShooterConstants.SHOOTER_KV);
         Preferences.initDouble("SHOOTER_KA", ShooterConstants.SHOOTER_KA);
         Preferences.initDouble("SHOOTER_RPM", 1000.0);
+        Preferences.initDouble("SHOOTER_BOTTOM", 1000.0);
 
         SparkFlexConfig topShooterMotorConfig = new SparkFlexConfig();
         SparkFlexConfig bottomShooterMotorConfig = new SparkFlexConfig();
@@ -38,7 +39,7 @@ public class ShooterSubsystem extends SubsystemBase {
         topShooterMotorConfig.inverted(true);
         topShooterMotorConfig.idleMode(SparkBaseConfig.IdleMode.kCoast);
 
-        bottomShooterMotorConfig.inverted(true);
+        bottomShooterMotorConfig.inverted(false);
         bottomShooterMotorConfig.idleMode(SparkBaseConfig.IdleMode.kCoast);
 
         topShooterMotor.configure(
@@ -63,16 +64,29 @@ public class ShooterSubsystem extends SubsystemBase {
             ShooterConstants.SHOOTER_P, ShooterConstants.SHOOTER_I, ShooterConstants.SHOOTER_D
     );
 
+    public void setTopShooterMotor(double rpm) {
+        topShooterMotor.setVoltage(
+                shooterPID.calculate(MathUtils.RPMtoRadians(topShooterMotor.getEncoder().getVelocity()), MathUtils.RPMtoRadians(rpm)) +
+                        shooterFF.calculate(MathUtils.RPMtoRadians(rpm))
+        );
+    }
+
+    public void setBottomShooterMotor(double rpm) {
+        bottomShooterMotor.setVoltage(
+                shooterPID.calculate(MathUtils.RPMtoRadians(bottomShooterMotor.getEncoder().getVelocity()), MathUtils.RPMtoRadians(rpm)) +
+                        shooterFF.calculate(MathUtils.RPMtoRadians(rpm))
+        );
+    }
 
     public void setMotorRPM(double rpm) {
 
         topShooterMotor.setVoltage(
-                shooterPID.calculate(MathUtils.RPMtoRadians(topShooterMotor.getEncoder().getVelocity()), MathUtils.RPMtoRadians(rpm)) + 
+                shooterPID.calculate(MathUtils.RPMtoRadians(topShooterMotor.getEncoder().getVelocity()), MathUtils.RPMtoRadians(rpm)) +
                 shooterFF.calculate(MathUtils.RPMtoRadians(rpm))
         );
 
         bottomShooterMotor.setVoltage(
-                shooterPID.calculate(MathUtils.RPMtoRadians(bottomShooterMotor.getEncoder().getVelocity()), MathUtils.RPMtoRadians(rpm)) + 
+                shooterPID.calculate(MathUtils.RPMtoRadians(bottomShooterMotor.getEncoder().getVelocity()), MathUtils.RPMtoRadians(rpm)) +
                 shooterFF.calculate(MathUtils.RPMtoRadians(rpm))
         );
 
@@ -99,6 +113,8 @@ public class ShooterSubsystem extends SubsystemBase {
         shooterNT.setEntry("shooter error", shooterPID.getError());
         shooterNT.setEntry("shooter setpoint", shooterPID.getSetpoint());
         shooterNT.setEntry("shooter velocity", MathUtils.RPMtoRadians(topShooterMotor.getEncoder().getVelocity()));
+        shooterNT.setEntry("shooter linebreak", getLinebreak());
+
 
         shooterPID.setP(Preferences.getDouble("SHOOTER_P", ShooterConstants.SHOOTER_P));
         shooterPID.setI(Preferences.getDouble("SHOOTER_I", ShooterConstants.SHOOTER_I));
