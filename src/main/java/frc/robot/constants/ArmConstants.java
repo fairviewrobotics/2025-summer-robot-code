@@ -4,11 +4,11 @@ import edu.wpi.first.math.trajectory.TrapezoidProfile;
 
 public class ArmConstants {
     public static final int armMotorID = 14;
-    public static final double armP = 0;
+    public static final double armP = 0.3;
     public static final double armI = 0;
     public static final double armD = 0;
     public static final double armTolerance = 0.1;
-    public static final double armMaxAngle = 0;
+    public static final double armMaxAngle = Math.PI/2;
     public static final double armMinAngle = -Math.PI/2;
     public static final double armMaxVelocity = 4 * Math.PI;
     public static final double armMaxAcceleration = 4 * Math.PI;

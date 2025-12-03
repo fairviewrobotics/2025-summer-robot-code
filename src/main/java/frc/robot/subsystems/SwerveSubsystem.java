@@ -25,6 +25,7 @@ import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.controller.ProfiledPIDController;
 import edu.wpi.first.math.controller.SimpleMotorFeedforward;
+import edu.wpi.first.math.filter.SlewRateLimiter;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Transform2d;
@@ -75,7 +76,9 @@ public class SwerveSubsystem extends SubsystemBase
   //TODO: add swerve constants
   private final ProfiledPIDController decelerationPID = new ProfiledPIDController(Constants.DrivebaseConstants.DECELERATION_P, 0, Constants.DrivebaseConstants.DECELERATION_P, Constants.DrivebaseConstants.TRANSLATION_ALIGN_CONSTRAINTS);
   private final ProfiledPIDController autoRotationPID = new ProfiledPIDController(Constants.DrivebaseConstants.AUTO_ROTATION_P, 0, Constants.DrivebaseConstants.AUTO_ROTATION_D, Constants.DrivebaseConstants.ROTATION_ALIGN_CONSTRAINTS);
-  
+
+  private final SlewRateLimiter magLimiter = new SlewRateLimiter(0);
+  private final SlewRateLimiter rotLimiter = new SlewRateLimiter(20);
 
   /**
    * Swerve drive object.
@@ -124,6 +127,7 @@ public class SwerveSubsystem extends SubsystemBase
     {
       throw new RuntimeException(e);
     }
+    swerveDrive.swerveController.addSlewRateLimiters(magLimiter, magLimiter, rotLimiter);
     swerveDrive.setHeadingCorrection(false); // Heading correction should only be used while controlling the robot via angle.
     swerveDrive.setCosineCompensator(false);//!SwerveDriveTelemetry.isSimulation); // Disables cosine compensation for simulations since it causes discrepancies not seen in real life.
     swerveDrive.setAngularVelocityCompensation(true,
@@ -142,7 +146,6 @@ public class SwerveSubsystem extends SubsystemBase
     // RobotModeTriggers.autonomous().onTrue(Commands.runOnce(this::zeroGyroWithAlliance));
 
     // autoRotationPID.enableContinuousInput(-Math.PI, Math.PI);
-    autoRotationPID.setTolerance(0.05);
   }
 
   /**

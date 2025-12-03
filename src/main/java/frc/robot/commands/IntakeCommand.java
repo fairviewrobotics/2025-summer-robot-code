@@ -33,8 +33,4 @@ public class IntakeCommand extends Command {
         intakeSubsystem.setIndexerVoltage(0);
     }
 
-    @Override
-    public boolean isFinished() {
-        return shooterSubsystem.getLinebreak(); // change to shooter linebreak
-    }
 }

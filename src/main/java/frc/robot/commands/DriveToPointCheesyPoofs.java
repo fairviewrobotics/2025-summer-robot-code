@@ -105,7 +105,7 @@ public class DriveToPointCheesyPoofs extends Command {
                 driveSubsystem.getFieldVelocity().omegaRadiansPerSecond);
         thetaController.setTolerance(Units.degreesToRadians(2.0));
 
-        driveController.setTolerance(0.005);
+        driveController.setTolerance(0.01);
     }
 
     @Override
