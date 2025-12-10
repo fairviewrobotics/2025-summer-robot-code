@@ -41,7 +41,7 @@ public class DriveToPointCheesyPoofs extends Command {
     private ProfiledPIDController driveController;
     private final ProfiledPIDController thetaController =
             new ProfiledPIDController(
-                    Constants.DrivebaseConstants.AUTO_ROTATION_P,
+                    Constants.DrivebaseConstants.AUTO_ROTATION_P.get(),
                     0.0,
                     0.0,
                     new TrapezoidProfile.Constraints(
@@ -65,7 +65,7 @@ public class DriveToPointCheesyPoofs extends Command {
         this.currentPose = currentPose;
         this.driveController =
                 new ProfiledPIDController(
-                        Constants.DrivebaseConstants.DECELERATION_P,
+                        Constants.DrivebaseConstants.DECELERATION_P.get(),
                         0.0,
                         0.0,
                         new TrapezoidProfile.Constraints(

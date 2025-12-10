@@ -61,7 +61,15 @@ public class RobotContainer
                   () -> primary_controller.getLeftX() * -1)
           .withControllerRotationAxis(() -> primary_controller.getRightX() * -1)
           .deadband(OperatorConstants.DEADBAND)
-          .scaleTranslation(0.2)
+          .scaleTranslation(0.8)
+          .allianceRelativeControl(true);
+
+  SwerveInputStream driveYAxisLock = SwerveInputStream.of(drivebase.getSwerveDrive(),
+                  () -> primary_controller.getLeftY() * 0,
+                  () -> primary_controller.getLeftX() * -1)
+          .withControllerRotationAxis(() -> primary_controller.getRightX() * 0)
+          .deadband(OperatorConstants.DEADBAND)
+          .scaleTranslation(0.8)
           .allianceRelativeControl(true);
 
   /**
@@ -128,6 +136,7 @@ public class RobotContainer
   {
     Command driveFieldOrientedDirectAngle      = drivebase.driveFieldOriented(driveDirectAngle);
     Command driveFieldOrientedAnglularVelocity = drivebase.driveFieldOriented(driveAngularVelocity);
+    Command driveFieldOrientedYAxisLock = drivebase.driveFieldOriented(driveYAxisLock);
     Command driveRobotOrientedAngularVelocity  = drivebase.driveFieldOriented(driveRobotOriented);
     Command driveSetpointGen = drivebase.driveWithSetpointGeneratorFieldRelative(
             driveDirectAngle);
@@ -136,19 +145,21 @@ public class RobotContainer
     Command driveSetpointGenKeyboard = drivebase.driveWithSetpointGeneratorFieldRelative(
             driveDirectAngleKeyboard);
     primary_controller.options().onTrue(Commands.runOnce(() -> drivebase.resetOdometry(new Pose2d(3, 3, new Rotation2d()))));
-    primary_controller.button(1).whileTrue(drivebase.sysIdDriveMotorCommand());
+    primary_controller.pov(0).whileTrue(drivebase.sysIdDriveMotorCommand());
+    primary_controller.pov(90).whileTrue(drivebase.sysIdAngleMotorCommand());
     primary_controller.button(2).whileTrue(Commands.runEnd(() -> driveDirectAngleKeyboard.driveToPoseEnabled(true),
             () -> driveDirectAngleKeyboard.driveToPoseEnabled(false)));
     Supplier<Double> armSetpointSupplier = () -> Preferences.getDouble("ARM_SETPOINT", 0.0);
     DoubleSupplier shooterSetpointSupplier = () -> Preferences.getDouble("SHOOTER_RPM", 0.0);
     DoubleSupplier bottomShooterSetpointSupplier = () -> Preferences.getDouble("SHOOTER_BOTTOM", 0.0);
-    secondary_controller.leftBumper().whileTrue(new ParallelCommandGroup(new ArmCommand(armSubsystem, shooterSubsystem, 0.4), new IntakeCommand(intakeSubsystem, shooterSubsystem, 4.0)));
+    secondary_controller.leftBumper().whileTrue(new ParallelCommandGroup(new ArmCommand(armSubsystem, shooterSubsystem, 0.4), new IntakeCommand(intakeSubsystem, shooterSubsystem, 2.0)));
     secondary_controller.b().whileTrue(new ArmCommand(armSubsystem, shooterSubsystem, 0.4));
     secondary_controller.x().whileTrue(new IntakeCommand(intakeSubsystem, shooterSubsystem, -4));
     secondary_controller.rightBumper().whileTrue(new ExampleShooterCommand(shooterSubsystem, shooterSetpointSupplier, bottomShooterSetpointSupplier));
     secondary_controller.a().whileTrue(new IntakeCommand(intakeSubsystem, shooterSubsystem, 4.0));
 
     armSubsystem.setDefaultCommand(new ArmCommand(armSubsystem, shooterSubsystem, 1.3));
+    primary_controller.R1().whileTrue(driveFieldOrientedYAxisLock);
 
     if (RobotBase.isSimulation())
     {

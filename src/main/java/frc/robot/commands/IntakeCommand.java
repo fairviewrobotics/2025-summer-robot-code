@@ -13,7 +13,7 @@ public class IntakeCommand extends Command {
         this.intakeSubsystem = intakeSubsystem;
         this.shooterSubsystem = shooterSubsystem;
         this.intakeVoltage = intakeVoltage;
-        addRequirements(intakeSubsystem);
+        addRequirements(intakeSubsystem, shooterSubsystem);
     }
 
     @Override

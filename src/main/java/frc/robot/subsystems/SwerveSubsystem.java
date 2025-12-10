@@ -37,6 +37,7 @@ import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.networktables.NetworkTableEntry;
 import edu.wpi.first.networktables.NetworkTableInstance;
+import edu.wpi.first.networktables.StructPublisher;
 import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Preferences;
@@ -74,8 +75,8 @@ public class SwerveSubsystem extends SubsystemBase
 {
   private final NetworkTablesUtils NTDebug = NetworkTablesUtils.getTable("debug");
   //TODO: add swerve constants
-  private final ProfiledPIDController decelerationPID = new ProfiledPIDController(Constants.DrivebaseConstants.DECELERATION_P, 0, Constants.DrivebaseConstants.DECELERATION_P, Constants.DrivebaseConstants.TRANSLATION_ALIGN_CONSTRAINTS);
-  private final ProfiledPIDController autoRotationPID = new ProfiledPIDController(Constants.DrivebaseConstants.AUTO_ROTATION_P, 0, Constants.DrivebaseConstants.AUTO_ROTATION_D, Constants.DrivebaseConstants.ROTATION_ALIGN_CONSTRAINTS);
+  private final ProfiledPIDController decelerationPID = new ProfiledPIDController(Constants.DrivebaseConstants.DECELERATION_P.get(), 0, Constants.DrivebaseConstants.DECELERATION_P.get(), Constants.DrivebaseConstants.TRANSLATION_ALIGN_CONSTRAINTS);
+  private final ProfiledPIDController autoRotationPID = new ProfiledPIDController(Constants.DrivebaseConstants.AUTO_ROTATION_P.get(), 0, Constants.DrivebaseConstants.AUTO_ROTATION_D.get(), Constants.DrivebaseConstants.ROTATION_ALIGN_CONSTRAINTS);
 
   private final SlewRateLimiter magLimiter = new SlewRateLimiter(0);
   private final SlewRateLimiter rotLimiter = new SlewRateLimiter(20);
@@ -109,15 +110,6 @@ public class SwerveSubsystem extends SubsystemBase
                                                     Rotation2d.fromDegrees(180));
     // Configure the Telemetry before creating the SwerveDrive to avoid unnecessary objects being created.
     SwerveDriveTelemetry.verbosity = TelemetryVerbosity.HIGH;
-      Preferences.initDouble("DECELERATION_P", Constants.DrivebaseConstants.DECELERATION_P);
-      Preferences.initDouble("DECELERATION_D", Constants.DrivebaseConstants.DECELERATION_D);
-      Preferences.initDouble("AUTO_ROTATION_P", Constants.DrivebaseConstants.AUTO_ROTATION_P);
-      Preferences.initDouble("AUTO_ROTATION_D", Constants.DrivebaseConstants.AUTO_ROTATION_D);
-      Preferences.initDouble("TARGET_POSE_X", 0.0);
-      Preferences.initDouble("TARGET_POSE_Y", 0.0);
-      Preferences.initDouble("TARGET_ROTATION", 0.0);
-      Preferences.initDouble("TOLERANCE", 0.5);
-      Preferences.initDouble("MAX_SPEED", 1.0);
     try
     {
       swerveDrive = new SwerveParser(directory).createSwerveDrive(Constants.MAX_SPEED, startingPose);
@@ -172,22 +164,12 @@ public class SwerveSubsystem extends SubsystemBase
     vision = new Vision(swerveDrive::getPose, swerveDrive.field);
   }
 
-  
-
-  private void updateTuningValues() {
-    decelerationPID.setP(Preferences.getDouble("DECELERATION_P", Constants.DrivebaseConstants.DECELERATION_P));
-    decelerationPID.setD(Preferences.getDouble("DECELERATION_D", Constants.DrivebaseConstants.DECELERATION_D));
-    autoRotationPID.setP(Preferences.getDouble("AUTO_ROTATION_P", Constants.DrivebaseConstants.AUTO_ROTATION_P));
-    autoRotationPID.setD(Preferences.getDouble("AUTO_ROTATION_D", Constants.DrivebaseConstants.AUTO_ROTATION_D));
-
-  }
-
   @Override
   public void periodic()
   {
 
         // Update odometry before logging
-        swerveDrive.updateOdometry();
+        // swerveDrive.updateOdometry();
 
         // Get current pose
         Pose2d currentPose = swerveDrive.getPose();
@@ -196,18 +178,20 @@ public class SwerveSubsystem extends SubsystemBase
         field.setRobotPose(currentPose);
     
         // Publish to AdvantageScope (X, Y, Rotation in RADIANS)
-        poseEntry.setDoubleArray(new double[] {
+        poseEntry.set(new Pose2d(
             currentPose.getX(),
             currentPose.getY(),
-            currentPose.getRotation().getRadians()
-        });
+            currentPose.getRotation()
+            )
+        );
 
-        targetEntry.setDoubleArray(new double[] {
-                Preferences.getDouble("TARGET_POSE_X", 0.0),
-                Preferences.getDouble("TARGET_POSE_Y", 0.0),
-                Preferences.getDouble("TARGET_ROTATION", 0.0),
-        });
-    
+        targetPoseEntry.set(new Pose2d(
+          Constants.TARGET_POSE_X.get(),
+          Constants.TARGET_POSE_Y.get(),
+          Rotation2d.fromDegrees(Constants.TARGET_POSE_ROTATION.get())
+          )
+          );
+
         SmartDashboard.putData("Field", field);
 
     // updateTuningValues();
@@ -223,9 +207,7 @@ public class SwerveSubsystem extends SubsystemBase
   @Override
   public void simulationPeriodic()
   {
-    updateTuningValues();
     swerveDrive.updateOdometry();
-
   }
   
 
@@ -671,14 +653,14 @@ public class SwerveSubsystem extends SubsystemBase
     }
   }
 private final Field2d field = new Field2d();
-private final NetworkTableEntry poseEntry =
-    NetworkTableInstance.getDefault()
-        .getTable("Sim")
-        .getEntry("RobotPose");
-private final NetworkTableEntry targetEntry =
-        NetworkTableInstance.getDefault()
-                .getTable("Sim")
-                .getEntry("TargetPose");
+
+private final StructPublisher<Pose2d> poseEntry = NetworkTableInstance.getDefault()
+  .getTable("Sim")
+  .getStructTopic("Current Pose", Pose2d.struct).publish();
+
+private final StructPublisher<Pose2d> targetPoseEntry = NetworkTableInstance.getDefault()
+  .getTable("Sim")
+  .getStructTopic("Target Pose", Pose2d.struct).publish();
 
 public boolean driveToPointVectorBased(Pose2d point, double tolerance, double maxVel, double maxRVel, boolean isContinuous) {
 

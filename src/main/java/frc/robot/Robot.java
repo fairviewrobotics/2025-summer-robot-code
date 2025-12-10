@@ -9,6 +9,12 @@ import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
+import org.littletonrobotics.junction.LogFileUtil;
+import org.littletonrobotics.junction.LoggedRobot;
+import org.littletonrobotics.junction.Logger;
+import org.littletonrobotics.junction.networktables.NT4Publisher;
+import org.littletonrobotics.junction.wpilog.WPILOGReader;
+import org.littletonrobotics.junction.wpilog.WPILOGWriter;
 
 /**
  * The VM is configured to automatically run this class, and to call the functions corresponding to each mode, as
@@ -27,6 +33,17 @@ public class Robot extends TimedRobot
 
   public Robot()
   {
+    {
+    // Logger.recordMetadata("ProjectName", "MyProject"); // Set a metadata value
+    // Logger.addDataReceiver(new NT4Publisher()); // Publish data to NetworkTables
+    // setUseTiming(false); // Run as fast as possible
+    // String logPath = LogFileUtil.findReplayLog(); // Pull the replay log from AdvantageScope (or prompt the user)
+    // Logger.setReplaySource(new WPILOGReader(logPath)); // Read replay log
+    // Logger.addDataReceiver(new WPILOGWriter(LogFileUtil.addPathSuffix(logPath, "_sim"))); // Save outputs to a new log
+    }
+    
+    // this.addDataReceiver(new NT4Publisher());
+    // this.start();
     instance = this;
   }
 
@@ -69,7 +86,9 @@ public class Robot extends TimedRobot
     // commands, running already-scheduled commands, removing finished or interrupted commands,
     // and running subsystem periodic() methods.  This must be called from the robot's periodic
     // block in order for anything in the Command-based framework to work.
+
     CommandScheduler.getInstance().run();
+
   }
 
   /**

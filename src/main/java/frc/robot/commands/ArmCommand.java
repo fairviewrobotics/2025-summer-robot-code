@@ -13,7 +13,7 @@ public class ArmCommand extends Command {
         this.armSubsystem = armSubsystem;
         this.shooterSubsystem = shooterSubsystem;
         this.position = position;
-        addRequirements(armSubsystem);
+        addRequirements(armSubsystem, shooterSubsystem);
     }
 
     @Override

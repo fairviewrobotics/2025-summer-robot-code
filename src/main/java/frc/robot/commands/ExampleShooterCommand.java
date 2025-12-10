@@ -21,8 +21,8 @@ public class ExampleShooterCommand extends Command {
 
     @Override
     public void execute() {
-        shooterSubsystem.setTopShooterMotor(topShooterRPM.getAsDouble());
-        shooterSubsystem.setBottomShooterMotor(bottomShooterRPM.getAsDouble());
+        shooterSubsystem.setTopMotorRPM(topShooterRPM.getAsDouble());
+        shooterSubsystem.setBottomMotorRPM(bottomShooterRPM.getAsDouble());
     }
 
     @Override
