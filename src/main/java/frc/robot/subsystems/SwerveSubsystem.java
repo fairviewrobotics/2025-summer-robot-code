@@ -6,6 +6,7 @@ package frc.robot.subsystems;
 
 import static edu.wpi.first.math.MathUtil.angleModulus;
 import static edu.wpi.first.units.Units.Meter;
+import static frc.robot.Constants.TARGET_POSE_ROTATION;
 
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.swerve.SwerveRequest;
@@ -26,10 +27,7 @@ import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.controller.ProfiledPIDController;
 import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.math.filter.SlewRateLimiter;
-import edu.wpi.first.math.geometry.Pose2d;
-import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.math.geometry.Transform2d;
-import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.math.geometry.*;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.trajectory.Trajectory;
@@ -59,7 +57,9 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.DoubleSupplier;
 import java.util.function.Supplier;
 
+import frc.robot.utils.Camera;
 import frc.robot.utils.NetworkTablesUtils;
+import frc.robot.utils.TunableNumber;
 import org.json.simple.parser.ParseException;
 import org.photonvision.targeting.PhotonPipelineResult;
 import swervelib.SwerveController;
@@ -80,6 +80,7 @@ public class SwerveSubsystem extends SubsystemBase
 
   private final SlewRateLimiter magLimiter = new SlewRateLimiter(0);
   private final SlewRateLimiter rotLimiter = new SlewRateLimiter(20);
+  Camera cam1 = new Camera(true, "cam1", new Transform3d(0, 0, 0, new Rotation3d()));
 
   /**
    * Swerve drive object.
@@ -169,30 +170,32 @@ public class SwerveSubsystem extends SubsystemBase
   {
 
         // Update odometry before logging
-        // swerveDrive.updateOdometry();
+        swerveDrive.updateOdometry();
 
-        // Get current pose
-        Pose2d currentPose = swerveDrive.getPose();
-    
-        // Update Field2d for the sim window
-        field.setRobotPose(currentPose);
-    
         // Publish to AdvantageScope (X, Y, Rotation in RADIANS)
         poseEntry.set(new Pose2d(
-            currentPose.getX(),
-            currentPose.getY(),
-            currentPose.getRotation()
+            swerveDrive.getPose().getX(),
+            swerveDrive.getPose().getY(),
+            swerveDrive.getPose().getRotation()
             )
         );
 
-        targetPoseEntry.set(new Pose2d(
-          Constants.TARGET_POSE_X.get(),
-          Constants.TARGET_POSE_Y.get(),
-          Rotation2d.fromDegrees(Constants.TARGET_POSE_ROTATION.get())
-          )
-          );
+        TunableNumber.ifChanged(
+          hashCode(),
+          () -> {
+            targetPoseEntry.set(new Pose2d(
+              Constants.TARGET_POSE_X.get(),
+              Constants.TARGET_POSE_Y.get(),
+              Rotation2d.fromDegrees(TARGET_POSE_ROTATION.get())
+            ));
+          },
+          Constants.TARGET_POSE_X,
+          Constants.TARGET_POSE_Y,
+          TARGET_POSE_ROTATION
+        );
 
-        SmartDashboard.putData("Field", field);
+
+        NTDebug.setEntry("Distance", cam1.getDistance());
 
     // updateTuningValues();
 
@@ -652,7 +655,6 @@ public class SwerveSubsystem extends SubsystemBase
       zeroGyro();
     }
   }
-private final Field2d field = new Field2d();
 
 private final StructPublisher<Pose2d> poseEntry = NetworkTableInstance.getDefault()
   .getTable("Sim")

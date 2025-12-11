@@ -8,14 +8,20 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.constants.IntakeConstants;
 
 public class IntakeSubsystem extends SubsystemBase {
-    private final SparkFlex intakeRollerMotor = new SparkFlex(IntakeConstants.intakeRollerMotorId, SparkFlex.MotorType.kBrushless);
-    private final SparkFlex indexerMotor = new SparkFlex(IntakeConstants.indexerMotorId, SparkFlex.MotorType.kBrushless);
+    private final SparkFlex intakeRollerMotor = new SparkFlex(IntakeConstants.INTAKE_ROLLER_MOTOR_ID, SparkFlex.MotorType.kBrushless);
+    private final SparkFlex indexerMotor = new SparkFlex(IntakeConstants.INDEXER_ROLLER_MOTOR_ID, SparkFlex.MotorType.kBrushless);
 
     private final DigitalInput intakeLinebreak = new DigitalInput(0);
 
     public IntakeSubsystem() {
-        intakeRollerMotor.setInverted(true);
-        indexerMotor.setInverted(false);
+        SparkFlexConfig intakeRollerMotorConfig = new SparkFlexConfig();
+        SparkFlexConfig indexerMotorConfig = new SparkFlexConfig();
+
+        intakeRollerMotorConfig
+                .inverted(true);
+        indexerMotorConfig
+                .inverted(false);
+
     }
 
     public void setSpeed(double speed) {

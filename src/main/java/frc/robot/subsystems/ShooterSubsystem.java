@@ -2,14 +2,21 @@ package frc.robot.subsystems;
 
 import com.revrobotics.spark.SparkFlex;
 import com.revrobotics.spark.SparkLowLevel;
+import com.revrobotics.spark.config.SparkFlexConfig;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.controller.SimpleMotorFeedforward;
+import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.DigitalInput;
+import edu.wpi.first.wpilibj.motorcontrol.Spark;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.Constants;
 import frc.robot.constants.ShooterConstants;
 import frc.robot.utils.TunableNumber;
 import frc.robot.utils.MathUtils;
 import frc.robot.utils.NetworkTablesUtils;
+
+import static frc.robot.Constants.TARGET_POSE_ROTATION;
 
 public class ShooterSubsystem extends SubsystemBase {
 
@@ -19,8 +26,15 @@ public class ShooterSubsystem extends SubsystemBase {
     NetworkTablesUtils shooterNT = NetworkTablesUtils.getTable("Shooter");
 
     public ShooterSubsystem() {
-        topShooterMotor.setInverted(true);
-        bottomShooterMotor.setInverted(true);
+
+        SparkFlexConfig topShooterMotorConfig = new SparkFlexConfig();
+        SparkFlexConfig bottomShooterMotorConfig = new SparkFlexConfig();
+
+        topShooterMotorConfig
+                .inverted(true);
+        bottomShooterMotorConfig
+                .inverted(true);
+
     }
 
     private final SimpleMotorFeedforward shooterFF = new SimpleMotorFeedforward(
@@ -86,7 +100,7 @@ public class ShooterSubsystem extends SubsystemBase {
         shooterNT.setEntry("shooter error", shooterPID.getError());
         shooterNT.setEntry("shooter setpoint", setpoint);
         shooterNT.setEntry("shooter velocity", MathUtils.RPMtoRadians(topShooterMotor.getEncoder().getVelocity()));
-        
+
     }
 
     public void resetPID() {

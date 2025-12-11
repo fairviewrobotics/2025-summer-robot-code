@@ -3,16 +3,14 @@ package frc.robot.commands;
 import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.subsystems.ShooterSubsystem;
 
-import java.util.function.DoubleSupplier;
-
 //Example usage of Shooter Subsystem, not in Robot Container
 
-public class ExampleShooterCommand extends Command {
+public class ShooterCommand extends Command {
     private final ShooterSubsystem shooterSubsystem;
-    private DoubleSupplier topShooterRPM;
-    private DoubleSupplier bottomShooterRPM;
+    private double topShooterRPM;
+    private double bottomShooterRPM;
 
-    public ExampleShooterCommand(ShooterSubsystem shooterSubsystem, DoubleSupplier topShooterRPM, DoubleSupplier bottomShooterRPM) {
+    public ShooterCommand(ShooterSubsystem shooterSubsystem, double topShooterRPM, double bottomShooterRPM) {
         this.shooterSubsystem = shooterSubsystem;
         this.topShooterRPM = topShooterRPM;
         this.bottomShooterRPM = bottomShooterRPM;
@@ -21,8 +19,8 @@ public class ExampleShooterCommand extends Command {
 
     @Override
     public void execute() {
-        shooterSubsystem.setTopMotorRPM(topShooterRPM.getAsDouble());
-        shooterSubsystem.setBottomMotorRPM(bottomShooterRPM.getAsDouble());
+        shooterSubsystem.setTopMotorRPM(topShooterRPM);
+        shooterSubsystem.setBottomMotorRPM(bottomShooterRPM);
     }
 
     @Override
